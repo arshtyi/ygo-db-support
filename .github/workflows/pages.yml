@@ -1,0 +1,89 @@
+name: Build and deploy image to Pages
+
+on:
+    push:
+        branches: main
+        paths:
+            - "data/db.yaml"
+            - "ygo-db-support.typ"
+    workflow_dispatch:
+
+permissions:
+    contents: read
+
+concurrency:
+    group: pages
+    cancel-in-progress: false
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Install fonts
+              run: |
+                  sudo apt-get update
+                  sudo apt-get install -y --no-install-recommends fontconfig fonts-noto-cjk
+                  fc-cache -f
+
+            - name: Install Rust
+              uses: dtolnay/rust-toolchain@stable
+
+            - name: Install just
+              uses: extractions/setup-just@v4
+
+            - name: Install Typst
+              uses: typst-community/setup-typst@v5
+              with:
+                  typst-version: "0.15.1"
+
+            - name: Download card images
+              run: just download
+
+            - name: Compile image
+              run: just compile
+
+            - name: Prepare Pages artifact
+              run: |
+                  mkdir -p _site
+                  cp ygo-db-support.png _site/
+                  cat > _site/index.html <<'HTML'
+                  <!doctype html>
+                  <html lang="zh-CN">
+                    <head>
+                      <meta charset="utf-8">
+                      <meta name="viewport" content="width=device-width, initial-scale=1">
+                      <meta http-equiv="refresh" content="0; url=./ygo-db-support.png">
+                      <title>DB系列本家续投统计</title>
+                    </head>
+                    <body>
+                      <a href="./ygo-db-support.png">查看 DB 系列本家续投统计图片</a>
+                    </body>
+                  </html>
+                  HTML
+
+            - name: Upload Pages artifact
+              uses: actions/upload-pages-artifact@v4
+              with:
+                  path: _site
+
+    deploy:
+        if: github.ref == 'refs/heads/main'
+        needs: build
+        runs-on: ubuntu-latest
+        timeout-minutes: 10
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+        steps:
+            - name: Configure Pages
+              uses: actions/configure-pages@v5
+
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4
