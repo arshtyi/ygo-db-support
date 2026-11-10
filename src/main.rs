@@ -1,6 +1,8 @@
-use std::{collections::BTreeMap, fs, time::Duration};
+mod compile;
 
-use anyhow::{Context, Result};
+use std::{collections::BTreeMap, env, fs, time::Duration};
+
+use anyhow::{Context, Result, bail};
 use serde::Deserialize;
 
 const BASE_URL: &str = "https://images.ygoprodeck.com/images/cards_cropped";
@@ -11,6 +13,25 @@ struct Entry {
 }
 
 fn main() -> Result<()> {
+    let mut args = env::args_os().skip(1);
+    let command = args.next();
+    if args.next().is_some() {
+        bail!("用法：ygo-db-support <download|compile>");
+    }
+    match command.as_deref().and_then(|arg| arg.to_str()) {
+        Some("download") => download_images(),
+        Some("compile") => compile::compile(),
+        Some("-h" | "--help") => {
+            println!("用法：ygo-db-support <download|compile>");
+            println!("  download  下载卡图到 image/");
+            println!("  compile   将 ygo-db-support.typ 编译为 ygo-db-support.png");
+            Ok(())
+        }
+        _ => bail!("用法：ygo-db-support <download|compile>"),
+    }
+}
+
+fn download_images() -> Result<()> {
     let yaml = fs::read_to_string("data/db.yaml").context("读取 data/db.yaml 失败")?;
     let entries: BTreeMap<String, Entry> =
         serde_yaml_ng::from_str(&yaml).context("解析 data/db.yaml 失败")?;

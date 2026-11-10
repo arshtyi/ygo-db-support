@@ -4,7 +4,7 @@ list:
     @just --list
 
 download:
-    cargo run --release
+    cargo run --release --locked -- download
 
 compile:
-    typst compile ygo-db-support.typ ygo-db-support.png
+    cargo run --release --locked -- compile

@@ -1,11 +1,16 @@
 [package]
-name    = "download-images"
+name    = "ygo-db-support"
 version = "0.1.0"
 edition = "2024"
+rust-version = "1.92"
 publish = false
 
 [dependencies]
 anyhow        = "1"
 serde         = { version = "1", features = [ "derive" ] }
 serde_yaml_ng = "0.10"
+typst         = "=0.15.1"
+typst-kit     = { version = "=0.15.1", features = [ "datetime", "embedded-fonts", "emit-diagnostics", "scan-fonts" ] }
+typst-layout  = "=0.15.1"
+typst-render  = "=0.15.1"
 ureq          = "3"
